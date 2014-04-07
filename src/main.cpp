@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <string>
 #include <cstdint>
@@ -17,25 +16,17 @@ class field {
 private:
   static const int WIDTH = 7;
   static const int HEIGHT = 6;
-  static const int SIZE = WIDTH * HEIGHT;
+  static const int SIZE = WIDTH *HEIGHT;
   static const int H1 = HEIGHT + 1;
   static const int H2 = HEIGHT + 2;
-  static const int SIZE1 = H1 * WIDTH;
+  static const int SIZE1 = H1 *WIDTH;
   static const int64_t BOTTOM = ((1LL << SIZE1) - 1LL) / ((1 << H1) - 1);
   static const int64_t TOP = BOTTOM << HEIGHT;
 
-  int64_t color[2] {};
-  int moves[SIZE] {};
+  int64_t color[2] = {};
+  int move[SIZE] = {};
+  char height[WIDTH] = {};
   int step_number = 0;
-  char height[WIDTH] {};
-
-  bool has_four(int64_t board) {
-    return has_combination(board, 1);
-  }
-
-  bool has_three(int64_t board) {
-    return has_combination(board, 0);
-  }
 
   bool has_combination(int64_t board, int shift) {
     int64_t y = board & (board >> HEIGHT);
@@ -56,60 +47,42 @@ private:
 
 public:
   field() {
-    reset();
-  }
-
-  void reset() {
     step_number = 0;
-    color[0] = color[1] = 0ll;
+    color[0] = color[1] = 0LL;
     for (int i = 0; i < WIDTH; i++) {
       height[i] = (char) (H1 * i);
     }
   }
 
-  int64_t positioncode() {
-    return 2 * color[0] + color[1] + BOTTOM;
-    // color[0] + color[1] + BOTTOM forms bitmap of heights
-    // so that positioncode() is a complete board encoding
-  }
 
-  int64_t white_position() {
-    return color[0];
-  }
-
-  int64_t black_position() {
-    return color[1];
-  }
-
-  std::string toString() {
+  std::string to_string() {
     std::string buf;
     for (int i = 0; i < step_number; i++) {
-      buf.push_back(1 + moves[i]);
+      buf.append(std::to_string(move[i]));
     }
     buf.push_back('\n');
     for (int w = 0; w < WIDTH; w++) {
-      buf.push_back(' ');
-      buf.append(std::to_string(w + 1));
+      buf.append(" " + std::to_string(w));
     }
     buf.push_back('\n');
     for (int h = HEIGHT - 1; h >= 0; h--) {
       for (int w = h; w < SIZE1; w += H1) {
         long mask = 1LL << w;
-        buf.append((color[0] & mask) != 0 ? " @" : (color[1] & mask) != 0 ? " 0" : " .");
+        buf.append((color[0] & mask) != 0 ? " 0" : (color[1] & mask) != 0 ? " 1" : " .");
       }
       buf.push_back('\n');
     }
-    if (has_four(color[0])) {
-      buf.append("@ won\n");
+    if (has_won(0)) {
+      buf.append("0 won\n");
     }
-    if (has_four(color[1])) {
-      buf.append("O won\n");
+    if (has_won(1)) {
+      buf.append("1 won\n");
     }
-    if (has_three(color[0])) {
-      buf.append("@ has three\n");
+    if (has_three(0)) {
+      buf.append("0 has three\n");
     }
-    if (has_three(color[1])) {
-      buf.append("O has three\n");
+    if (has_three(1)) {
+      buf.append("1 has three\n");
     }
     return buf;
   }
@@ -118,14 +91,8 @@ public:
     return islegal(color[step_number & 1] | (1LL << height[col]));
   }
 
-  // return whether newboard lacks overflowing column
   bool islegal(int64_t newboard) {
     return (newboard & TOP) == 0;
-  }
-
-  // return whether newboard is legal and includes a win
-  bool islegalhaswon(int64_t newboard) {
-    return islegal(newboard) && has_four(newboard);
   }
 
   bool is_draw() {
@@ -133,51 +100,54 @@ public:
     return ((color[1] | color[0]) & top_minus_one) == top_minus_one;
   }
 
-  bool first_won() {
-    return has_four(color[0]);
+  bool has_won(int id) {
+    return has_combination(color[id], 1);
   }
 
-  bool second_won() {
-    return has_four(color[1]);
-  }
-
-  bool first_has_three() {
-    return has_three(color[0]);
-  }
-
-  bool second_has_three() {
-    return has_three(color[1]);
+  bool has_three(int id) {
+    return has_combination(color[id], 0);
   }
 
   void backmove() {
-    int n;
-    n = moves[--step_number];
+    int n = move[--step_number];
     color[step_number & 1] ^= 1LL << --height[n];
   }
 
   void makemove(int n) {
     color[step_number & 1] ^= 1LL << height[n]++;
-    moves[step_number++] = n;
+    move[step_number++] = n;
   }
 
   std::pair<int, int> recommend_move(int recursion) {
-    int turn = step_number & 1; // 0 -- first, 1 -- second
+    return recommend_move_rec(recursion, step_number & 1);
+  }
+
+  std::pair<int, int> recommend_move_rec(int recursion, int begin_from) {
+    int turn = (step_number & 1) ^ begin_from;
+
+    if (has_won(begin_from)) {
+      return std::make_pair(-1, 10);
+    }
+    if (has_won(begin_from ^ 1)) {
+      return std::make_pair(-1, -10);
+    }
+
     int max_function;
     int max_move = 0;
 
     if (turn == 0) {
-      max_function = -100;
+      max_function = INT_MIN;
     } else {
-      max_function = 100;
+      max_function = INT_MAX;
     }
 
     if (recursion != 0) {
       for (int i = 0; i < WIDTH; ++i) {
-        if (!isplayable(i)) {
+        if (!isplayable(i)) { // ?
           continue;
         }
         makemove(i);
-        int function = recommend_move(recursion - 1).second;
+        int function = recommend_move_rec(recursion - 1, begin_from).second;
         if (turn == 0) {
           if (function > max_function) {
             max_function = function;
@@ -200,16 +170,16 @@ public:
         }
         makemove(i);
         int function = constants::NONE;
-        if (first_won()) {
+        if (has_won(begin_from)) {
           function += constants::I_WON;
         }
-        if (second_won()) {
+        if (has_won(begin_from ^ 1)) {
           function += constants::HE_WON;
         }
-        if (first_has_three()) {
+        if (has_three(begin_from)) {
           function += constants::I_HAVE_THREE;
         }
-        if (second_has_three()) {
+        if (has_three(begin_from ^ 1)) {
           function += constants::HE_HAS_THREE;
         }
         if (is_draw()) {
@@ -236,17 +206,30 @@ public:
 
 int main() {
   field c4;
-  c4.reset();
 
-  for (; ; ) {
-    std::cout << c4.toString() << std::endl;
-    std::cout << "I recommend this: " << c4.recommend_move(6).first << std::endl;
-    int step;
-    std::cin >> step;
-    if (step == -1) {
-      c4.backmove();
+  // for (; ; ) {
+  //   std::cout << c4.to_string() << std::endl;
+  //   std::cout << "I recommend this: " << c4.recommend_move(1).first << std::endl;
+  //   int step;
+  //   std::cin >> step;
+  //   if (step == -1) {
+  //     c4.backmove();
+  //     continue;
+  //   }
+  //   c4.makemove(step);
+  // }
+
+  std::string input;
+  for (; ;) {
+    std::cin >> input;
+    if (input == "Go") {
+      c4.makemove(3);
+      std::cout << 3;
       continue;
     }
-    c4.makemove(step);
+    int his_move = atoi(input.c_str());
+    c4.makemove(his_move);
+    int my_move = c4.recommend_move(1).first;
+    std::cout << my_move;
   }
 }
