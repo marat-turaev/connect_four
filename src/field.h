@@ -23,6 +23,7 @@ private:
   bool is_playable(int col);
   bool is_valid(int64_t newboard);
   std::pair<int, int> recommend_move_rec(int recursion, int begin_from);
+  int heuristic(int begin_from);
 
 public:
   field();

@@ -1,6 +1,5 @@
 #include <climits>
 #include "field.h"
-#include "constants.h"
 
 bool field::has_combination(int64_t board, int shift) {
   int64_t y = board & (board >> HEIGHT);
@@ -28,7 +27,7 @@ bool field::is_valid(int64_t newboard) {
 }
 
 std::pair<int, int> field::recommend_move_rec(int recursion, int begin_from) {
-  int turn = (step_number & 1) ^ begin_from;
+  int is_enemy_turn = (step_number & 1) ^ begin_from;
 
   if (has_won(begin_from)) {
     return std::make_pair(-1, 10);
@@ -37,13 +36,13 @@ std::pair<int, int> field::recommend_move_rec(int recursion, int begin_from) {
     return std::make_pair(-1, -10);
   }
 
-  int max_function;
-  int max_move = 0;
+  int optimal_function;
+  int optimal_move = 0;
 
-  if (turn == 0) {
-    max_function = INT_MIN;
+  if (is_enemy_turn == 0) {
+    optimal_function = INT_MIN;
   } else {
-    max_function = INT_MAX;
+    optimal_function = INT_MAX;
   }
 
   if (recursion != 0) {
@@ -53,15 +52,15 @@ std::pair<int, int> field::recommend_move_rec(int recursion, int begin_from) {
       }
       make_move(i);
       int function = recommend_move_rec(recursion - 1, begin_from).second;
-      if (turn == 0) {
-        if (function > max_function) {
-          max_function = function;
-          max_move = i;
+      if (is_enemy_turn == 0) {
+        if (function > optimal_function) {
+          optimal_function = function;
+          optimal_move = i;
         }
       } else {
-        if (function < max_function) {
-          max_function = function;
-          max_move = i;
+        if (function < optimal_function) {
+          optimal_function = function;
+          optimal_move = i;
         }
       }
       back_move();
@@ -74,42 +73,46 @@ std::pair<int, int> field::recommend_move_rec(int recursion, int begin_from) {
         continue;
       }
       make_move(i);
-      int function = constants::NONE;
-      if (has_won(begin_from)) {
-        function += constants::I_WON;
-      }
-      if (has_won(begin_from ^ 1)) {
-        function += constants::HE_WON;
-      }
-      if (has_three(begin_from)) {
-        function += constants::I_HAVE_THREE;
-      }
-      if (has_three(begin_from ^ 1)) {
-        function += constants::HE_HAS_THREE;
-      }
-      if (is_draw()) {
-        function += constants::DRAW;
-      }
-      if (turn == 0) {
-        if (function > max_function) {
-          max_function = function;
-          max_move = i;
+      int function = heuristic(begin_from);
+      if (is_enemy_turn == 0) {
+        if (function > optimal_function) {
+          optimal_function = function;
+          optimal_move = i;
         }
       } else {
-        if (function < max_function) {
-          max_function = function;
-          max_move = i;
+        if (function < optimal_function) {
+          optimal_function = function;
+          optimal_move = i;
         }
       }
       back_move();
     }
   }
-  return std::make_pair(max_move, max_function);
+
+  return std::make_pair(optimal_move, optimal_function);
+}
+
+int field::heuristic(int begin_from) {
+  int resutl = 0;
+  if (has_won(begin_from)) {
+    resutl += 10;
+  }
+  if (has_won(begin_from ^ 1)) {
+    resutl += -10;
+  }
+  if (has_three(begin_from)) {
+    resutl += 5;
+  }
+  if (has_three(begin_from ^ 1)) {
+    resutl += -5;
+  }
+  if (is_draw()) {
+    resutl += 7;
+  }
+  return resutl;
 }
 
 field::field() {
-  step_number = 0;
-  color[0] = color[1] = 0LL;
   for (int i = 0; i < WIDTH; i++) {
     height[i] = (char) (H1 * i);
   }

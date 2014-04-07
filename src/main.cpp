@@ -4,7 +4,6 @@
 
 int main() {
   field field;
-
   std::string input;
   for (; ;) {
     std::cin >> input;
