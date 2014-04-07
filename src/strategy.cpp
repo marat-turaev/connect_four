@@ -11,78 +11,48 @@ std::pair<int, int> strategy::recommend_move_rec(int recursion, int begin_from) 
     return std::make_pair(-1, -10);
   }
 
-  int optimal_function;
+  int optimal_function = is_enemy_turn ? INT_MAX : INT_MIN;
   int optimal_move = 0;
 
-  if (is_enemy_turn == 0) {
-    optimal_function = INT_MIN;
-  } else {
-    optimal_function = INT_MAX;
-  }
-
-  if (recursion != 0) {
-    for (int i = 0; i < field_.width(); ++i) {
-      if (!field_.is_playable(i)) {
-        continue;
-      }
-      field_.make_move(i);
-      int function = recommend_move_rec(recursion - 1, begin_from).second;
-      if (is_enemy_turn == 0) {
-        if (function > optimal_function) {
-          optimal_function = function;
-          optimal_move = i;
-        }
-      } else {
-        if (function < optimal_function) {
-          optimal_function = function;
-          optimal_move = i;
-        }
-      }
-      field_.back_move();
+  for (int i = 0; i < field_.width(); ++i) {
+    if (!field_.is_playable(i)) {
+      continue;
     }
-  }
-
-  if (recursion == 0) {
-    for (int i = 0; i < field_.width(); ++i) {
-      if (!field_.is_playable(i)) {
-        continue;
+    field_.make_move(i);
+    int function = recursion == 0 ? heuristic(begin_from) : recommend_move_rec(recursion - 1, begin_from).second;
+    if (is_enemy_turn) {
+      if (function < optimal_function) {
+        optimal_function = function;
+        optimal_move = i;
       }
-      field_.make_move(i);
-      int function = heuristic(begin_from);
-      if (is_enemy_turn == 0) {
-        if (function > optimal_function) {
-          optimal_function = function;
-          optimal_move = i;
-        }
-      } else {
-        if (function < optimal_function) {
-          optimal_function = function;
-          optimal_move = i;
-        }
+    } else {
+      if (function > optimal_function) {
+        optimal_function = function;
+        optimal_move = i;
       }
-      field_.back_move();
     }
+    field_.back_move();
   }
 
   return std::make_pair(optimal_move, optimal_function);
 }
 
 int strategy::heuristic(int begin_from) {
-  int resutl = 0;
+  int result = 0;
   if (field_.has_won(begin_from)) {
-    resutl += 10;
+    result += 10;
   }
   if (field_.has_won(begin_from ^ 1)) {
-    resutl += -10;
+    result += -10;
   }
   if (field_.has_three(begin_from)) {
-    resutl += 5;
+    result += 5;
   }
   if (field_.has_three(begin_from ^ 1)) {
-    resutl += -5;
+    result += -5;
   }
   if (field_.is_draw()) {
-    resutl += 7;
+    result += 7;
   }
-  return resutl;
+  return result;
 }
