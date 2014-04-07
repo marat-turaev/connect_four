@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "field.h"
+#include "strategy.h"
 
 int main() {
   field field;
@@ -14,7 +15,7 @@ int main() {
     }
     int his_move = atoi(input.c_str());
     field.make_move(his_move);
-    int my_move = field.recommend_move(3).first;
+    int my_move = strategy(field).recommend_move(3);
     field.make_move(my_move);
     std::cout << my_move << std::endl;
   }
