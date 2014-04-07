@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3.4
+#!/usr/bin/env python3.4
 
 import random
 
@@ -70,3 +70,4 @@ try:
 			turn = int(input())
 except Exception as err:
 	print(err)
+

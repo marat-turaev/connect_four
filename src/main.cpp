@@ -54,7 +54,6 @@ public:
     }
   }
 
-
   std::string to_string() {
     std::string buf;
     for (int i = 0; i < step_number; i++) {
@@ -205,31 +204,32 @@ public:
 
 
 int main() {
-  field c4;
+  field field;
 
   // for (; ; ) {
-  //   std::cout << c4.to_string() << std::endl;
-  //   std::cout << "I recommend this: " << c4.recommend_move(1).first << std::endl;
+  //   std::cout << field.to_string() << std::endl;
+  //   std::cout << "I recommend this: " << field.recommend_move(3).first << std::endl;
   //   int step;
   //   std::cin >> step;
   //   if (step == -1) {
-  //     c4.backmove();
+  //     field.backmove();
   //     continue;
   //   }
-  //   c4.makemove(step);
+  //   field.makemove(step);
   // }
 
   std::string input;
   for (; ;) {
     std::cin >> input;
     if (input == "Go") {
-      c4.makemove(3);
-      std::cout << 3;
+      field.makemove(3);
+      std::cout << 3 << std::endl;
       continue;
     }
     int his_move = atoi(input.c_str());
-    c4.makemove(his_move);
-    int my_move = c4.recommend_move(1).first;
-    std::cout << my_move;
+    field.makemove(his_move);
+    int my_move = field.recommend_move(3).first;
+    field.makemove(my_move);
+    std::cout << my_move << std::endl;
   }
 }
